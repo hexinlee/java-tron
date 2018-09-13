@@ -5,6 +5,8 @@ import static org.tron.common.runtime.utils.MUtil.convertToTronAddress;
 import static org.tron.common.runtime.vm.OpCode.CALL;
 import static org.tron.common.runtime.vm.OpCode.PUSH1;
 import static org.tron.common.runtime.vm.OpCode.REVERT;
+import static org.tron.common.runtime.vm.OpCode.SLOAD;
+import static org.tron.common.runtime.vm.OpCode.SSTORE;
 import static org.tron.common.utils.ByteUtil.EMPTY_BYTE_ARRAY;
 
 import java.math.BigInteger;
@@ -241,7 +243,8 @@ public class VM {
           energyCost = energyCosts.getLOG_ENERGY()
               + energyCosts.getLOG_TOPIC_ENERGY() * nTopics
               + energyCosts.getLOG_DATA_ENERGY() * stack.get(stack.size() - 2).longValue()
-              + calcMemEnergy(energyCosts, oldMemSize, memNeeded(stack.peek(), stack.get(stack.size() - 2)), 0, op);
+              + calcMemEnergy(energyCosts, oldMemSize,
+              memNeeded(stack.peek(), stack.get(stack.size() - 2)), 0, op);
 
           checkMemorySize(op, memNeeded(stack.peek(), stack.get(stack.size() - 2)));
           break;
@@ -1265,6 +1268,14 @@ public class VM {
       }
 
       program.setPreviouslyExecutedOp(op.val());
+      long curTime = System.nanoTime() / 1000;
+
+      if (op == SSTORE || op == SLOAD) {
+        program.pairList
+            .add(new java.util.AbstractMap.SimpleEntry<String, Long>(op.name(),
+                (curTime - program.getPreviousTime())));
+      }
+      program.setPreviousTime(curTime);
     } catch (RuntimeException e) {
       logger.warn("VM halted: [{}]", e.getMessage());
       program.spendAllEnergy();

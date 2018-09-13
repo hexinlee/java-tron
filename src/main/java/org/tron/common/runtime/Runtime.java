@@ -3,7 +3,6 @@ package org.tron.common.runtime;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.apache.commons.lang3.ArrayUtils.getLength;
-import static org.apache.commons.lang3.ArrayUtils.isEmpty;
 import static org.apache.commons.lang3.ArrayUtils.isNotEmpty;
 import static org.tron.common.runtime.utils.MUtil.convertToTronAddress;
 import static org.tron.common.runtime.utils.MUtil.transfer;
@@ -31,7 +30,6 @@ import org.spongycastle.util.encoders.Hex;
 import org.tron.common.runtime.config.VMConfig;
 import org.tron.common.runtime.vm.DataWord;
 import org.tron.common.runtime.vm.EnergyCost;
-import org.tron.common.runtime.vm.PrecompiledContracts;
 import org.tron.common.runtime.vm.VM;
 import org.tron.common.runtime.vm.program.InternalTransaction;
 import org.tron.common.runtime.vm.program.InternalTransaction.ExecutorType;
@@ -55,9 +53,7 @@ import org.tron.core.capsule.TransactionCapsule;
 import org.tron.core.config.Parameter.ChainConstant;
 import org.tron.core.config.args.Args;
 import org.tron.core.db.EnergyProcessor;
-import org.tron.core.db.StorageMarket;
 import org.tron.core.db.TransactionTrace;
-import org.tron.core.exception.BadTransactionException;
 import org.tron.core.exception.ContractExeException;
 import org.tron.core.exception.ContractValidateException;
 import org.tron.core.exception.VMIllegalException;
@@ -406,7 +402,7 @@ public class Runtime {
       return;
     }
 
-    if(contract.getContractAddress() == null) {
+    if (contract.getContractAddress() == null) {
       throw new ContractValidateException("Cannot get contract address from TriggerContract");
     }
 
@@ -472,20 +468,26 @@ public class Runtime {
 
   public void go() {
     try {
+
       if (vm != null) {
 
         TransactionCapsule trxCap = new TransactionCapsule(trx);
         if (null != blockCap && blockCap.generatedByMyself && null != trxCap.getContractRet()
             && contractResult.OUT_OF_TIME
             .equals(trxCap.getContractRet())) {
-          result = program.getResult();
           program.spendAllEnergy();
+          result = program.getResult();
           runtimeError = "Haven Time Out";
           result.setException(Program.Exception.notEnoughTime("Haven Time Out"));
           throw Program.Exception.notEnoughTime("Haven Time Out");
         }
 
+        program.pairList = new java.util.ArrayList<>();
+
+        program.setPreviousTime(System.nanoTime() / 1000);
+
         vm.play(program);
+
         result = program.getResult();
 
         if (isCallConstant()) {
@@ -526,6 +528,11 @@ public class Runtime {
         } else {
           deposit.commit();
         }
+        if (null != program.pairList) {
+          logger.error("txid: {}, vm time log: \n{}", trxCap.getTransactionId(),
+              program.pairList.toString());
+        }
+
       } else {
         deposit.commit();
       }
@@ -541,9 +548,14 @@ public class Runtime {
       result.setException(e);
       runtimeError = result.getException().getMessage();
       logger.error("timeout: {}", result.getException().getMessage());
+      TransactionCapsule trxCap = new TransactionCapsule(trx);
+      if (null != program.pairList) {
+        logger.error("txid: {}, vm time log: \n{}", trxCap.getTransactionId(),
+            program.pairList.toString());
+      }
     } catch (ContractValidateException e) {
       logger.error("when check constant, {}", e.getMessage());
-    }catch (Throwable e) {
+    } catch (Throwable e) {
       program.spendAllEnergy();
       result = program.getResult();
       if (Objects.isNull(result.getException())) {
@@ -556,6 +568,8 @@ public class Runtime {
       logger.error("runtime error is :{}", result.getException().getMessage());
     }
     trace.setBill(result.getEnergyUsed());
+
+
   }
 
   private long getEnergyFee(long callerEnergyUsage, long callerEnergyFrozen,

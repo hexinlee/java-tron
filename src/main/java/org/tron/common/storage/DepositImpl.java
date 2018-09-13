@@ -5,7 +5,7 @@ import static org.tron.common.runtime.utils.MUtil.convertToTronAddress;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import lombok.extern.slf4j.Slf4j;
 import org.tron.common.runtime.vm.DataWord;
 import org.tron.common.runtime.vm.program.Storage;
 import org.tron.common.utils.ByteArray;
@@ -35,6 +35,7 @@ import org.tron.core.exception.ItemNotFoundException;
 import org.tron.protos.Protocol;
 import org.tron.protos.Protocol.AccountType;
 
+@Slf4j
 public class DepositImpl implements Deposit {
 
   private static final byte[] LATEST_PROPOSAL_NUM = "LATEST_PROPOSAL_NUM".getBytes();
@@ -318,8 +319,10 @@ public class DepositImpl implements Deposit {
     Key addressKey = Key.create(address);
     Storage storage;
     if (storageCache.containsKey(addressKey)) {
+      logger.error("putStorageValue: in storageCache, hit storage");
       storage = storageCache.get(addressKey);
     } else {
+      logger.error("putStorageValue: in storageCache, not hit storage");
       storage = getStorage(address);
       storageCache.put(addressKey, storage);
     }
@@ -335,8 +338,10 @@ public class DepositImpl implements Deposit {
     Key addressKey = Key.create(address);
     Storage storage;
     if (storageCache.containsKey(addressKey)) {
+      logger.error("getStorageValue: in storageCache, hit storage");
       storage = storageCache.get(addressKey);
     } else {
+      logger.error("getStorageValue: in storageCache, not hit storage");
       storage = getStorage(address);
       storageCache.put(addressKey, storage);
     }
