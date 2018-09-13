@@ -324,12 +324,12 @@ public class DepositImpl implements Deposit {
   public synchronized void putStorageValue(byte[] address, DataWord key, DataWord value) {
     long totalStart = System.nanoTime() / 1000;
     address = convertToTronAddress(address);
-    if (getAccount(address) == null) {
-      Program.pairList
-          .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN putStorageValue",
-              System.nanoTime() / 1000 - totalStart));
-      return;
-    }
+    // if (getAccount(address) == null) {
+    //   Program.pairList
+    //       .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN putStorageValue",
+    //           System.nanoTime() / 1000 - totalStart));
+    //   return;
+    // }
     Key addressKey = Key.create(address);
     Storage storage;
 

@@ -809,10 +809,10 @@ public class Program {
   }
 
   public void storageSave(DataWord word1, DataWord word2) {
+    long start = System.nanoTime() / 1000;
     DataWord keyWord = word1.clone();
     DataWord valWord = word2.clone();
 
-    long start = System.nanoTime() / 1000;
     getContractState()
         .putStorageValue(convertToTronAddress(getOwnerAddress().getLast20Bytes()), keyWord,
             valWord);
