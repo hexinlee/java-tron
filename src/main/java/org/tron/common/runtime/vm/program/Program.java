@@ -141,7 +141,7 @@ public class Program {
   private long previousTime;
 
 
-  public java.util.List<java.util.Map.Entry<String, Long>> pairList;
+  public static java.util.List<java.util.Map.Entry<String, Long>> pairList = new java.util.ArrayList<>();
 
 
   //private byte[] codeHash;
@@ -811,9 +811,16 @@ public class Program {
   public void storageSave(DataWord word1, DataWord word2) {
     DataWord keyWord = word1.clone();
     DataWord valWord = word2.clone();
+
+    long start = System.nanoTime() / 1000;
     getContractState()
         .putStorageValue(convertToTronAddress(getOwnerAddress().getLast20Bytes()), keyWord,
             valWord);
+
+    pairList
+        .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN storageSave",
+            System.nanoTime() / 1000 - start));
+
   }
 
   public byte[] getCode() {

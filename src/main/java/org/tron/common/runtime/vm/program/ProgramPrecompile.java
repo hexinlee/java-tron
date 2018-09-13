@@ -42,7 +42,7 @@ public class ProgramPrecompile {
       }
 
       if (op.equals(OpCode.JUMPDEST)) {
-        logger.info("JUMPDEST:" + i);
+        // logger.info("JUMPDEST:" + i);
         ret.jumpdest.add(i);
       }
 

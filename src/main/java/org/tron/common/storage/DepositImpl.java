@@ -7,6 +7,7 @@ import com.google.protobuf.ByteString;
 import java.util.HashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.tron.common.runtime.vm.DataWord;
+import org.tron.common.runtime.vm.program.Program;
 import org.tron.common.runtime.vm.program.Storage;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.StringUtil;
@@ -145,8 +146,14 @@ public class DepositImpl implements Deposit {
 
   @Override
   public synchronized AccountCapsule getAccount(byte[] address) {
+
+    long start = System.nanoTime() / 1000;
     Key key = new Key(address);
     if (accountCache.containsKey(key)) {
+
+      Program.pairList.add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN getAccount1",
+          System.nanoTime() / 1000 - start));
+
       return accountCache.get(key).getAccount();
     }
 
@@ -160,6 +167,9 @@ public class DepositImpl implements Deposit {
     if (accountCapsule != null) {
       accountCache.put(key, Value.create(accountCapsule.getData()));
     }
+    Program.pairList.add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN getAccount2",
+        System.nanoTime() / 1000 - start));
+
     return accountCapsule;
   }
 
@@ -320,13 +330,29 @@ public class DepositImpl implements Deposit {
     Storage storage;
     if (storageCache.containsKey(addressKey)) {
       logger.error("putStorageValue: in storageCache, hit storage");
+      long start1 = System.nanoTime() / 1000;
       storage = storageCache.get(addressKey);
+      Program.pairList
+          .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN storageCache.get",
+              System.nanoTime() / 1000 - start1));
     } else {
       logger.error("putStorageValue: in storageCache, not hit storage");
+      long start2 = System.nanoTime() / 1000;
       storage = getStorage(address);
+      Program.pairList
+          .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN getStorage",
+              System.nanoTime() / 1000 - start2));
+      long start3 = System.nanoTime() / 1000;
       storageCache.put(addressKey, storage);
+      Program.pairList
+          .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN storageCache.put",
+              System.nanoTime() / 1000 - start3));
     }
+    long start4 = System.nanoTime() / 1000;
     storage.put(key, value);
+    Program.pairList
+        .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN storage.put",
+            System.nanoTime() / 1000 - start4));
   }
 
   @Override

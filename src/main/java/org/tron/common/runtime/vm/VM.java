@@ -109,21 +109,23 @@ public class VM {
           break;
         case SSTORE:
           // todo: check the reset to 0, refund or not
-          DataWord newValue = stack.get(stack.size() - 2);
-          DataWord oldValue = program.storageLoad(stack.peek());
-          if (oldValue == null && !newValue.isZero()) {
-            // set a new not-zero value
-            energyCost = energyCosts.getSET_SSTORE();
-          } else if (oldValue != null && newValue.isZero()) {
-            // set zero to an old value
-            program.futureRefundEnergy(energyCosts.getREFUND_SSTORE());
-            energyCost = energyCosts.getCLEAR_SSTORE();
-          } else {
-            // include:
-            // [1] oldValue == null && newValue == 0
-            // [2] oldValue != null && newValue != 0
-            energyCost = energyCosts.getRESET_SSTORE();
-          }
+          // DataWord newValue = stack.get(stack.size() - 2);
+          // DataWord oldValue = program.storageLoad(stack.peek());
+          // if (oldValue == null && !newValue.isZero()) {
+          //   // set a new not-zero value
+          //   energyCost = energyCosts.getSET_SSTORE();
+          // } else if (oldValue != null && newValue.isZero()) {
+          //   // set zero to an old value
+          //   program.futureRefundEnergy(energyCosts.getREFUND_SSTORE());
+          //   energyCost = energyCosts.getCLEAR_SSTORE();
+          // } else {
+          //
+          //   // include:
+          //   // [1] oldValue == null && newValue == 0
+          //   // [2] oldValue != null && newValue != 0
+          //   energyCost = energyCosts.getRESET_SSTORE();
+          // }
+          energyCost = energyCosts.getRESET_SSTORE();
           break;
         case SLOAD:
           energyCost = energyCosts.getSLOAD();
@@ -1028,6 +1030,7 @@ public class VM {
         }
         break;
         case SSTORE: {
+
           if (program.isStaticCall()) {
             throw new Program.StaticCallModificationException();
           }
@@ -1040,8 +1043,15 @@ public class VM {
                 + value;
           }
 
+          long start = System.nanoTime() / 1000;
           program.storageSave(addr, value);
+          long duration = System.nanoTime() / 1000 - start;
+          Program.pairList
+              .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN SSTORE", duration));
+
+
           program.step();
+
         }
         break;
         case JUMP: {

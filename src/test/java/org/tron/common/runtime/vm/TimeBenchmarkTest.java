@@ -112,6 +112,7 @@ public class TimeBenchmarkTest {
     long totalDuration = 0;
     int repeatCount = 10;
     for (int i = 0; i < repeatCount; i++) {
+
       long curDuration = triggerContractAndReturnDuration(contractAddress, feeLimit);
       System.out.println(String.format("count: %d, duration: %d", i, curDuration));
       totalDuration += curDuration;
