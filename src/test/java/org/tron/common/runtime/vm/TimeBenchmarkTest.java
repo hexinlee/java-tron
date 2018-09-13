@@ -118,8 +118,15 @@ public class TimeBenchmarkTest {
       Thread.sleep(10);
     }
     long avgDuration = totalDuration / repeatCount;
-    // System.out.println(avgDuration);
     System.out.println(String.format("avg duration: %d", avgDuration));
+
+    double defaultMinTimeRatio = 0.0;
+    double defaultMaxTimeRatio = 5.0;
+    double recommendMinTimeRatio = defaultMinTimeRatio * avgDuration / 100;
+    double recommendMaxTimeRatio = defaultMaxTimeRatio * avgDuration / 100;
+    System.out
+        .println(String.format("recommend minTimeRatio: %.2f, recommend maxTimeRatio: %.2f",
+            recommendMinTimeRatio, recommendMaxTimeRatio));
 
   }
 
