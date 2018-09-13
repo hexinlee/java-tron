@@ -26,10 +26,10 @@ public class Storage {
 
   public DataWord getValue(DataWord key) {
     if (rowCache.containsKey(key)) {
-      logger.error("getValue: in rowCache, hit key");
+      // logger.error("getValue: in rowCache, hit key");
       return rowCache.get(key).getValue();
     } else {
-      logger.error("getValue: in rowCache, not hit key");
+      // logger.error("getValue: in rowCache, not hit key");
       StorageRowCapsule row = store.get(compose(key.getData(), addrHash));
       if (row == null || row.getInstance() == null) {
         return null;
@@ -41,10 +41,10 @@ public class Storage {
 
   public void put(DataWord key, DataWord value) {
     if (rowCache.containsKey(key)) {
-      logger.error("put: in rowCache, hit key");
+      // logger.error("put: in rowCache, hit key");
       rowCache.get(key).setValue(value);
     } else {
-      logger.error("put: in rowCache, not hit key");
+      // logger.error("put: in rowCache, not hit key");
       byte[] rowKey = compose(key.getData(), addrHash);
       StorageRowCapsule row = new StorageRowCapsule(rowKey, value.getData());
       rowCache.put(key, row);

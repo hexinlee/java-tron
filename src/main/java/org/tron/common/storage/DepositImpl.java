@@ -333,20 +333,12 @@ public class DepositImpl implements Deposit {
     Key addressKey = Key.create(address);
     Storage storage;
 
-    long start11 = System.nanoTime() / 1000;
     boolean b = storageCache.containsKey(addressKey);
-    Program.pairList
-        .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN storageCache.containsKey",
-            System.nanoTime() / 1000 - start11));
     if (b) {
-      logger.error("putStorageValue: in storageCache, hit storage");
-      long start1 = System.nanoTime() / 1000;
+      // logger.error("putStorageValue: in storageCache, hit storage");
       storage = storageCache.get(addressKey);
-      Program.pairList
-          .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN storageCache.get",
-              System.nanoTime() / 1000 - start1));
     } else {
-      logger.error("putStorageValue: in storageCache, not hit storage");
+      // logger.error("putStorageValue: in storageCache, not hit storage");
       long start2 = System.nanoTime() / 1000;
       storage = getStorage(address);
       Program.pairList
