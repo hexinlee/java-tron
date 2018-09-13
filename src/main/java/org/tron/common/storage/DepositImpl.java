@@ -322,13 +322,23 @@ public class DepositImpl implements Deposit {
 
   @Override
   public synchronized void putStorageValue(byte[] address, DataWord key, DataWord value) {
+    long totalStart = System.nanoTime() / 1000;
     address = convertToTronAddress(address);
     if (getAccount(address) == null) {
+      Program.pairList
+          .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN putStorageValue",
+              System.nanoTime() / 1000 - totalStart));
       return;
     }
     Key addressKey = Key.create(address);
     Storage storage;
-    if (storageCache.containsKey(addressKey)) {
+
+    long start11 = System.nanoTime() / 1000;
+    boolean b = storageCache.containsKey(addressKey);
+    Program.pairList
+        .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN storageCache.containsKey",
+            System.nanoTime() / 1000 - start11));
+    if (b) {
       logger.error("putStorageValue: in storageCache, hit storage");
       long start1 = System.nanoTime() / 1000;
       storage = storageCache.get(addressKey);
@@ -353,6 +363,11 @@ public class DepositImpl implements Deposit {
     Program.pairList
         .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN storage.put",
             System.nanoTime() / 1000 - start4));
+
+    Program.pairList
+        .add(new java.util.AbstractMap.SimpleEntry<String, Long>("IN putStorageValue",
+            System.nanoTime() / 1000 - totalStart));
+
   }
 
   @Override
