@@ -7,12 +7,12 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.spongycastle.util.encoders.Hex;
-import org.testng.Assert;
 import org.tron.common.application.Application;
 import org.tron.common.application.ApplicationFactory;
 import org.tron.common.application.TronApplicationContext;
 import org.tron.common.runtime.TVMTestResult;
 import org.tron.common.runtime.TVMTestUtils;
+import org.tron.common.runtime.TVMTestWithTimeResult;
 import org.tron.common.storage.DepositImpl;
 import org.tron.common.utils.FileUtil;
 import org.tron.core.Constant;
@@ -90,15 +90,15 @@ public class TimeBenchmarkTest {
 
   @Test
   public void timeBenchmark()
-      throws ContractExeException, ContractValidateException, ReceiptCheckErrException, VMIllegalException {
+      throws ContractExeException, ContractValidateException, ReceiptCheckErrException, VMIllegalException, InterruptedException {
     long value = 0;
     long feeLimit = 200_000_000L; // sun
     long consumeUserResourcePercent = 100;
 
     String contractName = "timeBenchmark";
     byte[] address = Hex.decode(OWNER_ADDRESS);
-    String ABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"number\",\"type\":\"uint256\"}],\"name\":\"fibonacciNotify\",\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"number\",\"type\":\"uint256\"}],\"name\":\"fibonacci\",\"outputs\":[{\"name\":\"result\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"name\":\"input\",\"type\":\"uint256\"},{\"indexed\":false,\"name\":\"result\",\"type\":\"uint256\"}],\"name\":\"Notify\",\"type\":\"event\"}]";
-    String code = "608060405234801561001057600080fd5b506101ba806100206000396000f30060806040526004361061004c576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680633c7fdc701461005157806361047ff414610092575b600080fd5b34801561005d57600080fd5b5061007c600480360381019080803590602001909291905050506100d3565b6040518082815260200191505060405180910390f35b34801561009e57600080fd5b506100bd60048036038101908080359060200190929190505050610124565b6040518082815260200191505060405180910390f35b60006100de82610124565b90507f71e71a8458267085d5ab16980fd5f114d2d37f232479c245d523ce8d23ca40ed8282604051808381526020018281526020019250505060405180910390a1919050565b60008060008060008086141561013d5760009450610185565b600186141561014f5760019450610185565b600093506001925060009150600290505b85811115156101815782840191508293508192508080600101915050610160565b8194505b505050509190505600a165627a7a72305820637e163344c180cd57f4b3a01b07a5267ad54811a5a2858b5d67330a2724ee680029";
+    String ABI = "[{\"constant\":false,\"inputs\":[{\"name\":\"number\",\"type\":\"uint256\"}],\"name\":\"timeForMem\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"number\",\"type\":\"uint256\"}],\"name\":\"timeForStorage\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"number\",\"type\":\"uint256\"}],\"name\":\"timeForCpu\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"cpuNumber\",\"type\":\"uint256\"},{\"name\":\"memNumber\",\"type\":\"uint256\"},{\"name\":\"storageNumber\",\"type\":\"uint256\"}],\"name\":\"timeBenchmark\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]";
+    String code = "608060405234801561001057600080fd5b5061020f806100206000396000f3006080604052600436106100615763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416633809bdc3811461006657806386b2793d14610080578063b8c3e54814610098578063f8648bd6146100c2575b600080fd5b34801561007257600080fd5b5061007e6004356100e0565b005b34801561008c57600080fd5b5061007e600435610144565b3480156100a457600080fd5b506100b060043561016c565b60408051918252519081900360200190f35b3480156100ce57600080fd5b5061007e6004356024356044356101c7565b606060008260405190808252806020026020018201604052801561010e578160200160208202803883390190505b509150600090505b8281101561013f5780828281518110151561012d57fe5b60209081029091010152600101610116565b505050565b60005b81811015610168576000818152602081905260409020819055600101610147565b5050565b60008080808085151561018257600094506101be565b856001141561019457600194506101be565b50600092506001915082905060025b8581116101ba5791928301918291506001016101a3565b8194505b50505050919050565b6101d08361016c565b506101da826100e0565b61013f816101445600a165627a7a723058205f72ffd1612fd5de0d212d58d7908eb0e37900da0b50c16d30d45ed5ae431cf70029";
     String libraryAddressPair = null;
 
     TVMTestResult result = TVMTestUtils
@@ -107,25 +107,34 @@ public class TimeBenchmarkTest {
             feeLimit, consumeUserResourcePercent, libraryAddressPair,
             dbManager, null);
 
-    long expectEnergyUsageTotal = 88529;
-    Assert.assertEquals(result.getReceipt().getEnergyUsageTotal(), expectEnergyUsageTotal);
-    Assert.assertEquals(dbManager.getAccountStore().get(address).getBalance(),
-        totalBalance - expectEnergyUsageTotal * 100);
     byte[] contractAddress = result.getContractAddress();
 
+    long totalDuration = 0;
+    int repeatCount = 10;
+    for (int i = 0; i < repeatCount; i++) {
+      long curDuration = triggerContractAndReturnDuration(contractAddress, feeLimit);
+      System.out.println(String.format("count: %d, duration: %d", i, curDuration));
+      totalDuration += curDuration;
+      Thread.sleep(10);
+    }
+    long avgDuration = totalDuration / repeatCount;
+    // System.out.println(avgDuration);
+    System.out.println(String.format("avg duration: %d", avgDuration));
+
+  }
+
+  public long triggerContractAndReturnDuration(byte[] contractAddress, long feeLimit)
+      throws ContractExeException, ReceiptCheckErrException, VMIllegalException, ContractValidateException {
     /* ====================================================================== */
-    byte[] triggerData = TVMTestUtils.parseABI("fibonacciNotify(uint)", "");
-    result = TVMTestUtils
-        .triggerContractAndReturnTVMTestResult(Hex.decode(OWNER_ADDRESS),
+    String params = "0000000000000000000000000000000000000000000000000000000000001770" +
+        "0000000000000000000000000000000000000000000000000000000000000258" +
+        "000000000000000000000000000000000000000000000000000000000000003c";
+    byte[] triggerData = TVMTestUtils.parseABI("timeBenchmark(uint256,uint256,uint256)", params);
+    TVMTestWithTimeResult result = TVMTestUtils
+        .triggerContractAndReturnTVMTestWithTimeResult(Hex.decode(OWNER_ADDRESS),
             contractAddress, triggerData, 0, feeLimit, dbManager, null);
 
-    long expectEnergyUsageTotal2 = 110;
-    Assert.assertEquals(result.getReceipt().getEnergyUsageTotal(), expectEnergyUsageTotal2);
-    Assert.assertEquals(result.getRuntime().getResult().isRevert(), true);
-    Assert.assertTrue(
-        result.getRuntime().getResult().getException() == null);
-    Assert.assertEquals(dbManager.getAccountStore().get(address).getBalance(),
-        totalBalance - (expectEnergyUsageTotal + expectEnergyUsageTotal2) * 100);
+    return result.getDuration();
   }
 
   /**

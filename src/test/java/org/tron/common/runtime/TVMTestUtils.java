@@ -132,6 +132,17 @@ public class TVMTestUtils {
         .setContractAddress(contractAddress);
   }
 
+  public static TVMTestWithTimeResult triggerContractAndReturnTVMTestWithTimeResult(
+      byte[] callerAddress,
+      byte[] contractAddress, byte[] data, long callValue, long feeLimit, Manager dbManager,
+      BlockCapsule blockCap)
+      throws ContractExeException, ReceiptCheckErrException, ContractValidateException, VMIllegalException {
+    Transaction trx = generateTriggerSmartContractAndGetTransaction(callerAddress, contractAddress,
+        data, callValue, feeLimit);
+    return processTransactionAndReturnTVMTestWithTimeResult(trx, dbManager, blockCap)
+        .setContractAddress(contractAddress);
+  }
+
 
   public static TVMTestResult processTransactionAndReturnTVMTestResult(Transaction trx,
       Manager dbManager, BlockCapsule blockCap)
@@ -152,6 +163,27 @@ public class TVMTestUtils {
     return new TVMTestResult(runtime, trace.getReceipt(), null);
   }
 
+  public static TVMTestWithTimeResult processTransactionAndReturnTVMTestWithTimeResult(
+      Transaction trx,
+      Manager dbManager, BlockCapsule blockCap)
+      throws ContractExeException, ContractValidateException, ReceiptCheckErrException, VMIllegalException {
+    TransactionCapsule trxCap = new TransactionCapsule(trx);
+    TransactionTrace trace = new TransactionTrace(trxCap, dbManager);
+    DepositImpl deposit = DepositImpl.createRoot(dbManager);
+    Runtime runtime = new Runtime(trace, blockCap, deposit,
+        new ProgramInvokeFactoryImpl());
+
+    // init
+    trace.init();
+    //exec
+
+    long start = System.currentTimeMillis();
+    trace.exec(runtime);
+    long duration = System.currentTimeMillis() - start;
+    trace.finalization(runtime);
+
+    return new TVMTestWithTimeResult(runtime, duration, null);
+  }
 
   /**
    * create the Contract Instance for smart contract.
